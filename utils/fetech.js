@@ -1,27 +1,45 @@
 const https = require('https');
-const url = require('../config/check').url;
+const http = require('http');
+const getLinks = require('./getlinks');
 
-const fetech = () => {
-    try {
-        https.get(url,(res)=>{
+const Fetech = (url, visited = new Set(), depth ) => {
+    return new Promise((resolve, reject) => {
+        const protocol = url.startsWith('https') ? https : http;
+
+        protocol.get(url, (res) => {
             if (res.statusCode !== 200) {
-                console.error('Error fetching data');
+                reject(new Error('Error fetching data'));
                 return;
             }
-            else {
-                let data = '';
-                res.on('data',(chunk)=>{
-                    data += chunk;
-                });
-                res.on('end',()=>{
-                    console.log('Data fetched successfully : ',data);
-                });
-            }
-        })
-    } 
-    catch (error) {
-        process.exit(error.message);
-    }
+
+            let data = '';
+            res.on('data', (chunk) => {
+                data += chunk;
+            });
+
+            res.on('end', async () => {
+                try {
+                    console.log(`Data fetched successfully from ${url}`);
+                    const links = getLinks(data);
+                    visited.add(url);
+
+                    if (depth > 0) {
+                        for (const link of links) {
+                            if (!visited.has(link)) {
+                                await Fetech(link, visited, depth - 1);
+                            }
+                        }
+                    }
+
+                    resolve(links);
+                } catch (error) {
+                    reject(error);
+                }
+            });
+        }).on('error', (error) => {
+            reject(error);
+        });
+    });
 };
 
-module.exports = fetech;
+module.exports = Fetech;

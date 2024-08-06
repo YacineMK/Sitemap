@@ -1,0 +1,12 @@
+{
+  "name": "sitemap",
+  "version": "1.0.0",
+  "description": "��#\u0000 \u0000S\u0000i\u0000t\u0000e\u0000m\u0000a\u0000p\u0000\r\u0000 \u0000",
+  "main": "main.js",
+  "scripts": {
+    "start": "node main.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}

@@ -1,20 +1,11 @@
 const https = require('https');
 const http = require('http');
-const getLinks = require('./getlinks');
-
-const Fetech = async (url, visited = new Set(), depth) => {
-    // Return if depth is 0 or URL has already been visited
-    if (depth < 0 || visited.has(url)) {
-        return;
-    }
-
-    // Mark URL as visited
-    visited.add(url);
-
-    // Determine protocol
-    const protocol = url.startsWith('https') ? https : http;
-
+const urlModule = require('url');
+const getLinks = require('./getlinks'); 
+const fetchPage = (url) => {
     return new Promise((resolve, reject) => {
+        const protocol = url.startsWith('https') ? https : http;
+
         protocol.get(url, (res) => {
             if (res.statusCode !== 200) {
                 console.error(`Error fetching ${url}: Status code ${res.statusCode}`);
@@ -27,29 +18,43 @@ const Fetech = async (url, visited = new Set(), depth) => {
                 data += chunk;
             });
 
-            res.on('end', async () => {
-                try {
-                    console.log(`Fetched ${url}`);
-                    const links = getLinks(data);
-
-                    console.log(`Links found on ${url}:`, links);
-
-                    for (const link of links) {
-                        if (!visited.has(link)) {
-                            console.log(`Visiting ${link}`);
-                            await Fetech(link, visited, depth - 1);
-                        }
-                    }
-
-                    resolve();
-                } catch (error) {
-                    reject(error);
-                }
+            res.on('end', () => {
+                resolve(data);
             });
         }).on('error', (error) => {
             reject(error);
         });
     });
+};
+
+const Fetech = async (url, visited = new Set(), maxDepth = 1) => {
+    if (maxDepth < 0 || visited.has(url)) {
+        return;
+    }
+
+    visited.add(url);
+    const links = [];
+    
+    try {
+        const data = await fetchPage(url);
+        const newLinks = getLinks(data);
+
+        console.log(`Fetched ${url}`);
+        console.log(`Links found on ${url}:`, newLinks);
+
+        for (const link of newLinks) {
+            let absoluteLink = urlModule.resolve(url, link);
+
+            if (!visited.has(absoluteLink) && !absoluteLink.match(/\.(jpg|png)$/i) && !absoluteLink.includes('mailto')) {
+                links.push(absoluteLink);
+                await Fetech(absoluteLink, visited, maxDepth - 1); 
+            }
+        }
+    } catch (error) {
+        console.error(`Error processing ${url}:`, error);
+    }
+
+    return links;
 };
 
 module.exports = Fetech;

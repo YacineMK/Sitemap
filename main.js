@@ -8,17 +8,19 @@ const path = require('path');
 const main = async () => {
     try {
         const startUrl = getBaseUrl();
-        const maxDepth = process.argv[2] || 1000; 
+        const maxDepth = parseInt(process.argv[2], 10) || 3; 
 
-        const links = await Fetech(startUrl, new Set(), maxDepth);
-        console.log(links.length);
-        console.log('completed Links:', links);
-        
-        fs.writeFileSync(path.join(__dirname, 'public', 'sitemap.xml'), arrayToXml(links));
+        const visited = new Set();
+        const links = await Fetech(startUrl, visited, maxDepth);
+
+        console.log('Completed Links:', links);
+
+        const sitemapPath = path.join(__dirname, 'public', 'sitemap.xml');
+        fs.writeFileSync(sitemapPath, arrayToXml(links));
+        console.log(`Sitemap written to ${sitemapPath}`);
 
     } catch (error) {
         console.error('Error:', error);
-        
     }
 };
 

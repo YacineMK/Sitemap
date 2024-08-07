@@ -11,12 +11,14 @@ const main = async () => {
         const maxDepth = process.argv[2] || 1000; 
 
         const links = await Fetech(startUrl, new Set(), maxDepth);
+        console.log(links.length);
         console.log('completed Links:', links);
         
         fs.writeFileSync(path.join(__dirname, 'public', 'sitemap.xml'), arrayToXml(links));
 
     } catch (error) {
         console.error('Error:', error);
+        
     }
 };
 
